@@ -1,3 +1,4 @@
+# Re-export Base và các model/Enum để những module khác có thể import từ `models`.
 from db.database import Base
 from .user import User, UserRole
 from .event import Event
