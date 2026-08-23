@@ -2,15 +2,19 @@ from db.database import SessionLocal
 from models import User, Event, EventTask, EventStaff, UserRole, TaskStatus, TaskPriority, EventStaffRole
 from core.security import get_password_hash
 
+
+# Tạo dữ liệu mẫu để phục vụ development/testing.
 def seed_data():
+    # Mở một session độc lập vì seed chạy ngoài request của FastAPI.
     db = SessionLocal()
     try:
-        # Seed User
+        # Seed User: chỉ tạo nếu email admin chưa tồn tại để script có thể chạy lại.
         user = db.query(User).filter(User.email == "admin@gmail.com").first()
         if not user:
             user = User(
                 email="admin@gmail.com",
-                hashed_password=get_password_hash("admin123"), 
+                # Không lưu password gốc; phải hash trước khi insert.
+                hashed_password=get_password_hash("admin123"),
                 full_name="Quản trị viên",
                 role=UserRole.ADMIN
             )
@@ -19,7 +23,7 @@ def seed_data():
             db.refresh(user)
             print("Seed thành công User.")
 
-        # Seed Event
+        # Seed Event: chỉ tạo event mẫu nếu chưa có event cùng tên.
         event = db.query(Event).filter(Event.name == "Lễ kỷ niệm 5 năm").first()
         if not event:
             event = Event(
@@ -32,12 +36,12 @@ def seed_data():
             db.commit()
             db.refresh(event)
             print("Seed thành công Event.")
-            
-            # Phân quyền cho User làm OWNER của Event
+
+            # Thêm user seed vào event với role OWNER.
             staff = EventStaff(event_id=event.id, user_id=user.id, role=EventStaffRole.OWNER)
             db.add(staff)
-            
-            # Seed Event Task
+
+            # Tạo task mẫu thuộc event.
             task = EventTask(
                 event_id=event.id,
                 title="Chuẩn bị hội trường",
@@ -49,11 +53,15 @@ def seed_data():
             db.add(task)
             db.commit()
             print("Seed thành công Staff và Task.")
-            
+
     except Exception as e:
+        # In lỗi để dễ phát hiện vấn đề khi chạy script seed.
         print("Lỗi seed dữ liệu:", e)
     finally:
+        # Luôn đóng session dù seed thành công hay thất bại.
         db.close()
 
+
+# Chỉ chạy seed khi file được thực thi trực tiếp: python app/seed.py.
 if __name__ == "__main__":
     seed_data()
